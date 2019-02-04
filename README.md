@@ -1,3 +1,3 @@
 # Clustering Tool
 
-Clusrtering Tool in R shinny
+Clusrtering Tool in R shiny
