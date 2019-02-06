@@ -248,7 +248,7 @@ server <- function(input, output) {
   
   Raw_Dataframe_Database <- eventReactive(input$run, {
     driver <- JDBC("com.amazon.redshift.jdbc41.Driver", "~/.redshiftTools/redshift-driver.jar", identifier.quote="`")
-    url <- sprintf("jdbc:postgresql://genting.cnpzuz3xslqd.us-west-2.redshift.amazonaws.com:5439/genting?tcpKeepAlive=true&ssl=true&sslfactory=com.amazon.redshift.ssl.NonValidatingFactory", "genting.cnpzuz3xslqd.us-west-2.redshift.amazonaws.com")  #, 5439, "genting.new_acquizition_first1")
+    url <- sprintf("jdbc:postgresql://redshift.amazonaws.com:)
     jconn <- dbConnect(driver, url, input$USERNAME, input$PASSWORD)
     dbListTables(jconn)
     m <- dbGetQuery(jconn, input$TABLENAME)
