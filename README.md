@@ -1,4 +1,4 @@
-# Clustering Tool
+# Clustering Tool in R shinny
 
 Clustering was one of the big part of my day to day job, so this tool was build to make the clustering excerise simple. You just need to upload the file through excel or connect with database (credential should be given in server) and you could directly build clusters from the data. If the data has missing values and outlier, this tool has the capability to treat it.
 
