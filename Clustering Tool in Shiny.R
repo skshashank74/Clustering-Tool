@@ -4,7 +4,6 @@ library(shinydashboard)
 #devtools::install_github('hadley/ggplot2')
 library(ggplot2)
 library(corrplot)
-#install.packages("sacles")
 library(scales)
 library(dplyr)
 library(rhandsontable)
@@ -23,8 +22,11 @@ library (RPostgreSQL)
 library(DBI)
 library(devtools)
 library(Cairo)
+library(igraph)
+library(visNetwork)
 
-#install.packages("colorspace")
+
+
 rm(ui)
 rm(server)
 
@@ -42,7 +44,7 @@ ui <- dashboardPage( title = "Hello Shiny", skin = "blue",
                      dashboardBody(
                        tabItems(
                          tabItem(tabName = "first", h2("IMPORT DATA"),
-                                 fluidRow( 
+                                 fluidRow(
                                    box( width = 12,
                                         radioButtons("option", "Choose Data Source Option", choices = c("Excel","Database"), inline = T)
                                    )
@@ -80,7 +82,7 @@ ui <- dashboardPage( title = "Hello Shiny", skin = "blue",
                                                     DT::dataTableOutput("table01", height = 200, width = "auto" )
                                            ),
                                            h3(" Please dont select same varibales for both Clustering and Descriptors")
-                                   )  
+                                   ) 
                                  )
                          ),
                          tabItem(tabName = "second", h2("Exploratory Data Analysis"),
@@ -90,7 +92,7 @@ ui <- dashboardPage( title = "Hello Shiny", skin = "blue",
                                        verbatimTextOutput("na_in_each_col")),
                                    box(solidHeader = T, background = "black", width = 12, uiOutput("col1")),
                                    box( width = 12,
-                                        radioButtons("missing_value", "Missing Value Treatment", 
+                                        radioButtons("missing_value", "Missing Value Treatment",
                                                      choices = c("Proceed as it is",
                                                                  "Replace with Mean", "Replace with Zero"), inline = T))
                                  ),
@@ -119,11 +121,11 @@ ui <- dashboardPage( title = "Hello Shiny", skin = "blue",
                                        sliderInput("min", "Select Lower Range", 0.0,0.05,0.00),
                                        sliderInput("max", "Select Upper Range", 0.95,1.0,1.0 ),
                                        box(width = 12,
-                                         box(verbatimTextOutput("count")),
-                                         box(verbatimTextOutput("count2"))),
+                                           box(verbatimTextOutput("count")),
+                                           box(verbatimTextOutput("count2"))),
                                        actionButton(inputId = "update1", "Submit")
                                    )
-                                 ), 
+                                 ),
                                  fluidRow(
                                    box(solidHeader = T, background = "black", width = 12, uiOutput("col002")),
                                    box(width = 6, height = 450, title = "Box Plot after Capping",status = "primary", solidHeader = T,
@@ -148,7 +150,6 @@ ui <- dashboardPage( title = "Hello Shiny", skin = "blue",
                                               verbatimTextOutput("table3"),
                                               tags$head(tags$style("#table3{color:black; font-size:12px; font-style:italic;
                                                                    overflow-y:scroll; max-height: 250px; background: ghostwhite;}")),
-                                              br(),
                                               downloadButton("downloadclustertable", "Download"))
                                               )
                                  ),
@@ -185,7 +186,7 @@ ui <- dashboardPage( title = "Hello Shiny", skin = "blue",
                                                     DT::dataTableOutput("cluster_zscore", height = "auto", width = "auto" ),
                                                     downloadButton("table5", "Download")
                                            )
-                                   )              
+                                   )             
                                  )
                          ),
                          tabItem(tabName = "fifth", h2("Cluster Allocation"),
@@ -215,7 +216,7 @@ ui <- dashboardPage( title = "Hello Shiny", skin = "blue",
                                           tabPanel(title = "View of Descriptor Values", status = "primary", solidHeader = T,
                                                    background = "black",
                                                    box(width = 12,
-                                                       uiOutput("col9"), 
+                                                       uiOutput("col9"),
                                                        plotlyOutput("Descriptorbarchart", height = 'auto', width = 'auto')
                                                    )
                                           ),
@@ -224,8 +225,10 @@ ui <- dashboardPage( title = "Hello Shiny", skin = "blue",
                                                    dataTableOutput("descriptor_vis")
                                           )
                                    )
-                                 )
-                                 
+                                 ),
+                                 fluidRow(box("Cluster Distance Matrix Heat Map",solidHeader = T, background = "black", width = 12, height = 500,
+                                              plotlyOutput("transition_matrix"))),
+                                 fluidRow(visNetworkOutput("transition_network", width = '100%'))
                          )
                          )
                        )
@@ -233,11 +236,8 @@ ui <- dashboardPage( title = "Hello Shiny", skin = "blue",
 
 
 
+
 server <- function(input, output) {
-  
-  
-  
-  
   Raw_Dataframe_Excel <- reactive({
     file_to_read = input$file
     if(is.null(file_to_read)){return()}
@@ -248,7 +248,7 @@ server <- function(input, output) {
   
   Raw_Dataframe_Database <- eventReactive(input$run, {
     driver <- JDBC("com.amazon.redshift.jdbc41.Driver", "~/.redshiftTools/redshift-driver.jar", identifier.quote="`")
-    url <- sprintf("jdbc:postgresql://redshift.amazonaws.com:)
+    url <- sprintf("jdbc:postgresql://genting.cnpzuz3xslqd.us-west-2.redshift.amazonaws.com:5439/genting?tcpKeepAlive=true&ssl=true&sslfactory=com.amazon.redshift.ssl.NonValidatingFactory", "genting.cnpzuz3xslqd.us-west-2.redshift.amazonaws.com")  #, 5439, "genting.new_acquizition_first1")
     jconn <- dbConnect(driver, url, input$USERNAME, input$PASSWORD)
     dbListTables(jconn)
     m <- dbGetQuery(jconn, input$TABLENAME)
@@ -373,7 +373,7 @@ server <- function(input, output) {
   
   output$count <- renderPrint({
     total_row <- nrow(New_Variable_data())
-   
+    
     Cap_max <- function(x){ stopifnot(is.numeric(x))
       quantiles <- quantile( x, c(input$max) , na.rm = TRUE)
       max_e <- length(which(x > quantiles[1]))
@@ -388,7 +388,7 @@ server <- function(input, output) {
         (for(i in matc){
           cat("Count of Max Outliers of",names(New_Variable_data())[i],"=", Max_data[1,i], sep = " ","\n")
         })
-        )
+    )
   })
   
   output$count2 <- renderPrint({
@@ -402,7 +402,7 @@ server <- function(input, output) {
     m <- c(input$dropdown2)
     matc <- match(m, names(New_Variable_data()))
     
-     for(i in matc){
+    for(i in matc){
       cat("Count of Min Outliers of",names(New_Variable_data())[i],"=", Min_data[1,i], sep = " ","\n")
     }
     
@@ -780,6 +780,78 @@ server <- function(input, output) {
     
   })
   
+  Transition_Table <- reactive({
+    table <- data.frame(clusters()$centers)
+    abc <- as.matrix(dist(table, method = "euclidean", diag = TRUE))
+    abc <- data.frame(melt(abc))
+    colnames(abc) <- c("Cluster_From", "Cluster_To", "Distance")
+    abc
+  })
+  
+  #output$transition_matrix <- renderDataTable({Transition_Table()})
+  
+  output$transition_matrix <- renderPlotly({
+    ggplot(Transition_Table(), aes(y = Cluster_From, x = Cluster_To, fill = Distance)) +
+      theme_minimal() +
+      geom_tile(colour = "white", width = .9, height = .9) +
+      scale_fill_gradientn(colours = c('#133B76','#386EBF','#AECCFA','#E4EEFD'), limits = c(0, max(Transition_Table()$Distance)),
+                           breaks = seq(0, max(Transition_Table()$Distance), by = max(Transition_Table()$Distance)/4),
+                           labels = c("0", round(max(Transition_Table()$Distance)/4*1, 2), round(max(Transition_Table()$Distance)/4*2, 2),
+                                      round(max(Transition_Table()$Distance)/4*3, 2), round(max(Transition_Table()$Distance)/4*4, 2)),
+                           guide = guide_colourbar(ticks = T, nbin = 50, barheight = .5, label = T, barwidth = 10)) +
+      geom_text(aes(label = round(Distance, 2)), fontface = "bold", size = 4) +
+      theme(legend.position = 'bottom',
+            legend.direction = "horizontal",
+            panel.grid.major = element_blank(),
+            panel.grid.minor = element_blank(),
+            plot.title = element_text(size = 20, face = "bold", vjust = 2, color = 'black', lineheight = 0.8),
+            axis.title.x = element_text(size = 16, face = "bold"),
+            axis.title.y = element_text(size = 16, face = "bold"),
+            axis.text.y = element_text(size = 8, face = "bold", color = 'black'),
+            axis.text.x = element_text(size = 8, angle = 90, hjust = 0.5, vjust = 0.5, face = "bold")
+      ) +
+      ggtitle("")
+  })
+  
+  
+  output$transition_network <- renderVisNetwork({
+    edges <-
+      data.frame(
+        from = Transition_Table()$Cluster_From,
+        to = Transition_Table()$Cluster_To,
+        label = round(Transition_Table()$Distance, 2),
+        #font.size = aa1$value * 100,
+        #width = aa1$value * 15,
+        shadow = TRUE,
+        arrows = "to",
+        color = list(color = "#F0F0FF", highlight = "red")
+      )
+    
+    nodes <- data_frame(id = c( c(Transition_Table()$Cluster_From), c(Transition_Table()$Cluster_To) )) %>%
+      distinct(id) %>%
+      arrange(id) %>%
+      mutate(
+        label = id,
+        color = ifelse(
+          label %in% c('(start)', '(conversion)'),
+          '#4ab04a',
+          ifelse(label == '(null)', '#ce472e', '#ffd73e')
+        ),
+        shadow = TRUE,
+        shape = "box"
+      )
+    
+    visNetwork(nodes,
+               edges,
+               height = "100%",
+               width = "100%",
+               main = "Distance Network") %>%
+      visIgraphLayout(randomSeed = 123) %>%
+      visNodes(size = 5) %>%
+      visOptions(highlightNearest = TRUE, nodesIdSelection = list(enabled = TRUE, selected = "1"))
+  })
+  
 }
 
 shinyApp(ui, server)
+
