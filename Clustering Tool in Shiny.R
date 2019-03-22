@@ -102,13 +102,7 @@ ui <- dashboardPage( title = "Hello Shiny", skin = "blue",
                                        background = "black" , plotOutput("boxplot", height = "300px"),
                                        br(),
                                        verbatimTextOutput("summ")),
-                                   
-                                   #tabBox( side = "left",  width = 6, height = 400, selected = "Box Plot",
-                                   #      tabPanel(title = "Summary", status = "primary", solidHeader = T,
-                                   #             background = "black" , verbatimTextOutput("summ")),
-                                   #     tabPanel(title = "Box Plot", status = "primary", solidHeader = T,
-                                   #            background = "black" , plotOutput("boxplot", height = "385px"))
-                                   
+                                     
                                    box(title = "Histogram", status = "primary", solidHeader = T,
                                        background = "black", plotOutput("histogram1", height = "300px"),
                                        sliderInput("bins", "Number of Breaks", 1,50,10)
@@ -466,30 +460,7 @@ server <- function(input, output) {
     lines(density(rnorm(length(Dataframe2()[,c(input$dropdown002)]), mean(Dataframe2()[,c(input$dropdown002)]),
                         sd(Dataframe2()[,c(input$dropdown002)]) ), adjust = 2), col ="Red", lwd=2) })
   
-  
-  
-  ####)
-  
-  #memory <- reactiveValues(dat = NULL)
-  #capped <- reactive({Dataframe1()})
-  
-  #Dataframe2 <- eventReactive(input$savechanges, {
-  #  isolate(dat <- memory$dat)
-  #  if (is.null(dat)) {
-  #    memory$dat <- data.frame(xvals = capped())
-  #    names(memory$dat)[1] <- input$dropdown2
-  #  } else {
-  #    #print(capped())
-  #    #df.tmp <- capped()
-  #    #names(df.tmp) <- input$dropdown1
-  #    memory$dat[input$dropdown2] <- capped()
-  #    #memory$dat <- cbind(dat,capped())
-  #}
-  # return(memory$dat)
-  #})
-  
-  ###
-  
+   
   output$table3 <- renderPrint({round(Dataframe2(), digits = 3)})
   
   output$downloadclustertable <- downloadHandler(
